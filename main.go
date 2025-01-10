@@ -21,7 +21,10 @@ type SystemConfig struct {
 	Locale        string
 	LocaleLang    string
 	Keymap				string
+	Dotfilepath		string
 	GrubThemePath string
+	SddmCfgPath		string
+	SddmTheme     string
 	RootPassword  string
 	Username      string
 	UserPassword  string
@@ -51,7 +54,10 @@ func getUserInput() SystemConfig {
 		Locale:        "en_US.UTF-8",
 		LocaleLang:    "de_DE.UTF-8",
 		Keymap:				 "de",
+		Dotfilepath		 "/mnt/dotfiles",
 		GrubThemePath: "",
+		SddmCfgPath:   "/etc/sddm.conf",
+		SddmTheme:     "",
 		RootPassword:  "rootpassword",
 		Username:      "g405t",
 		UserPassword:  "userpassword",
@@ -70,7 +76,10 @@ func getUserInput() SystemConfig {
 	locale := prompt(reader, "Locale", defaults.Locale)
 	localeLang := prompt(reader, "Locale Language (e.g., en_US.UTF-8)", defaults.LocaleLang)
 	keymap := prompt(reader, "Keyboard Layout (e.g., de, us)", defaults.Keymap)
+	dotfilePath := prompt(reader, "Path to your dotfile repository (e.g., /home/dotfiles, /mnt/dotfiles)", defaults.Dotfilepath)
 	grubThemePath := prompt(reader, "Path to grub theme (e.g., /usr/share/grub/themes/themename/theme.txt)", defaults.GrubThemePath)
+	sddmConfigPath := prompt(reader, "Path to sddm config (e.g., /etc/sddm.conf)", defaults.SddmCfgPath)
+	sddmTheme := prompt(reader, "Name for sddm theme (e.g., theme-git)", defaults.SddmTheme)
 	rootPassword := prompt(reader, "Root Password", defaults.RootPassword)
 	username := prompt(reader, "Username", defaults.Username)
 	userPassword := prompt(reader, "User Password", defaults.UserPassword)
@@ -90,7 +99,10 @@ func getUserInput() SystemConfig {
 		Locale:        locale,
 		LocaleLang:    localeLang,
 		Keymap:				 keymap,
+		Dotfilepath:	 dotfilePath,
 		GrubThemePath: grubThemePath,
+		SddmCfgPath:	 sddmConfigPath,
+		SddmTheme:     sddmTheme,
 		RootPassword:  rootPassword,
 		Username:      username,
 		UserPassword:  userPassword,

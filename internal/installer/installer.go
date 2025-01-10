@@ -126,7 +126,38 @@ func installGrubBootLoader(config SystemConfig, rootMountPoint string) {
 	}
 }
 
+// Installs & configures wireless support (necessary for laptops mostly)
+func configureWirelessSupport(rootMountPoint string) {
+	RunCommand("pacstrap", rootMountPoint, "iwd")
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "systemctl", "enable", "iwd")
+}
 
+func installAURHelper(helper string) {
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "git", "clone", "https://aur.archlinux.org/" + helper + ".git")
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "cd " + helper, "&&", "makepkg", "-si", "--no-confirm")
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "rm", "-rf", helper)
+}
+
+// Install sddm login manager & configures it
+func installSddmLoginManager(config SystemConfig, rootMountPoint) {
+	// Install AUR helper
+	installAURHelper("paru")
+	
+	// Install & enable sddm
+	RunCommand("pacstrap", rootMountPoint, "sddm")
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "systemctl", "enable", "sddm")
+
+	// Configure sddm
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "ln", "-sf", config.Dotfilepath + "/sddm/sddm.conf", config.SddmCfgPath)
+
+	// Install sddm theme
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "paru", "-S", "--no-confirm", config.SddmTheme)
+}
+
+// Runs first update on system (completes correct installation)
+func runUpdatesAfterInstallation(rootMountPoint string) {
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "pacman", "-Syu", "--no-confirm")
+}
 
 func InstallArchBase(config SystemConfig) error {
  	// 1. Partition Discs
@@ -154,8 +185,11 @@ func InstallArchBase(config SystemConfig) error {
 	installGrubBootLoader(config, rootMountPoint)
 
 	// 6. Install wireless support (install iwd & enable service)
+	configureWirelessSupport(rootMountPoint)
 
 	// 7. Install sddm + Configuration
+	installSddmLoginManager(config, rootMountPoint)
 
 	// 8. Update system
+	runUpdatesAfterInstallation(rootMountPoint)
 }
