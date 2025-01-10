@@ -34,6 +34,7 @@ func encryptRootPartition(disk string) {
 	RunCommand("cryptsetup", "open", disk + "3", "cryptroot")
 }
 
+// Create subvolumes for btrfs to enable backups and advanced features
 func createBtrfsSubvolumes(rootMountPoint string) {
 	RunCommand("brtfs", "subvolume", "create", rootMountPoint + "/@")
 	RunCommand("brtfs", "subvolume", "create", rootMountPoint + "/@home")
@@ -41,6 +42,7 @@ func createBtrfsSubvolumes(rootMountPoint string) {
 	RunCommand("brtfs", "subvolume", "create", rootMountPoint + "/@snapshots")
 }
 
+// Format & mount any partition that exists on the hard drive
 func mountPartitions(efiPartition, swapPartition, rootPartition, rootMountPoint string) {
 	RunCommand("mks.fat", "-F32", efiPartition)
 
@@ -68,13 +70,63 @@ func mountPartitions(efiPartition, swapPartition, rootPartition, rootMountPoint 
 	RunCommand("mount", efiPartition, rootMountPoint + "/boot")
 } 
 
+// Install all needed packages for the base system
 func installBaseSystem(rootMountPoint string) {
 	RunCommand("pacstrap", rootMountPoint, "linux", "linux-firmware", "networkmanager", "base", "git", "nano")
 }
 
+// Generate the fstab file
 func generateFstab(rootMountPoint string) {
 	RunCommand("genfstab", "-U", rootMountPoint, ">>", rootMountPoint + "/etc/fstab")
 }
+
+// Configure the arch linux base installation
+func configureBaseInstallation(config SystemConfig, rootMountPoint string) {
+	// Configure System Clock to be on correct time zone
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "ln", "-sf", "/usr/share/zoneinfo/" + config.Timezone, "/etc/localtime")
+
+	// Configure System clock to be synchronized
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "hwclock", "--systohc")
+
+	// Configure locale and system language
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "echo", config.Locale, ">>", "/etc/locale.gen")
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "echo", config.LocaleLang, ">>", "/etc/locale.gen")
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "locale-gen")
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "echo", "LANG=" + config.LocaleLang, ">", "/etc/locale.conf")
+
+	// Configure keyboard layout
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "echo", "KEYMAP=" + config.Keymap, ">", "/etc/vconsole.conf")
+
+	// Configure hostname
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "echo", config.Hostname, ">", "/etc/hostname")
+
+	// Update hosts file to have the hostname included
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "echo", "-e", "127.0.0.1\tlocalhost\\n::1\tlocalhost\\n127.0.1.1\t" + config.Hostname + ".localdomain " + config.Hostname, ">>", "/etc/hosts")
+
+	// Enable network services on next startup
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "systemctl", "enable", "NetworkManager.service")
+}
+
+// Install the grub bootloader and configure it
+func installGrubBootLoader(config SystemConfig, rootMountPoint string) {
+	// Install needed packages
+	RunCommand("pacstrap", rootMountPoint, "grub", "efibootmgr")
+
+	// Install grub on the system
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "grub-install", "--target=x86_64-efi", "--efi-directory=/boot")
+
+	// Generate grub configuration files
+	RunCommand("chroot", rootMountPoint, "sh", "-c", "grub-mkconfig", "-o", "/boot/grub/grub.cfg")
+
+	// Install grub theme
+	if themePath != "" {
+		grubConfig := "/mnt/etc/default/grub"
+		RunCommand("chroot", rootMountPoint, "sh", "-c", "echo", "GRUB_THEME=" + config.GrubThemePath, "|", "tee", "-a", grubConfig)
+		RunCommand("chroot", rootMountPoint, "sh", "-c", "grub-mkconfig", "-o", "/boot/grub/grub.cfg")
+	}
+}
+
+
 
 func InstallArchBase(config SystemConfig) error {
  	// 1. Partition Discs
@@ -96,8 +148,10 @@ func InstallArchBase(config SystemConfig) error {
 	generateFstab(rootMountPoint)
 
 	// 4. Base System configuration (Locale, Keyboard layout, clock, etc.)
+	configureBaseInstallation(config)
 
 	// 5. Install Grub + Configuration
+	installGrubBootLoader(config, rootMountPoint)
 
 	// 6. Install wireless support (install iwd & enable service)
 

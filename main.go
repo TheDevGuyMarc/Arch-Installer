@@ -20,6 +20,8 @@ type SystemConfig struct {
 	Timezone      string
 	Locale        string
 	LocaleLang    string
+	Keymap				string
+	GrubThemePath string
 	RootPassword  string
 	Username      string
 	UserPassword  string
@@ -47,12 +49,14 @@ func getUserInput() SystemConfig {
 		Hostname:      "archlinux",
 		Timezone:      "Europe/Berlin",
 		Locale:        "en_US.UTF-8",
-		LocaleLang:    "en_US.UTF-8",
+		LocaleLang:    "de_DE.UTF-8",
+		Keymap:				 "de",
+		GrubThemePath: "",
 		RootPassword:  "rootpassword",
 		Username:      "g405t",
 		UserPassword:  "userpassword",
 		Packages: []string{
-			"grub", "sddm", "xorg", "vim", "git", "base-devel",
+			"linux", "linux-firmware", "grub", "efibootmgr", "sddm", "xorg", "vim", "git", "base",
 		},
 	}
 
@@ -65,6 +69,8 @@ func getUserInput() SystemConfig {
 	timezone := prompt(reader, "Timezone", defaults.Timezone)
 	locale := prompt(reader, "Locale", defaults.Locale)
 	localeLang := prompt(reader, "Locale Language (e.g., en_US.UTF-8)", defaults.LocaleLang)
+	keymap := prompt(reader, "Keyboard Layout (e.g., de, us)", defaults.Keymap)
+	grubThemePath := prompt(reader, "Path to grub theme (e.g., /usr/share/grub/themes/themename/theme.txt)", defaults.GrubThemePath)
 	rootPassword := prompt(reader, "Root Password", defaults.RootPassword)
 	username := prompt(reader, "Username", defaults.Username)
 	userPassword := prompt(reader, "User Password", defaults.UserPassword)
@@ -83,6 +89,8 @@ func getUserInput() SystemConfig {
 		Timezone:      timezone,
 		Locale:        locale,
 		LocaleLang:    localeLang,
+		Keymap:				 keymap,
+		GrubThemePath: grubThemePath,
 		RootPassword:  rootPassword,
 		Username:      username,
 		UserPassword:  userPassword,
