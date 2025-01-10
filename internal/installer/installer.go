@@ -68,6 +68,14 @@ func mountPartitions(efiPartition, swapPartition, rootPartition, rootMountPoint 
 	RunCommand("mount", efiPartition, rootMountPoint + "/boot")
 } 
 
+func installBaseSystem(rootMountPoint string) {
+	RunCommand("pacstrap", rootMountPoint, "linux", "linux-firmware", "networkmanager", "base", "git", "nano")
+}
+
+func generateFstab(rootMountPoint string) {
+	RunCommand("genfstab", "-U", rootMountPoint, ">>", rootMountPoint + "/etc/fstab")
+}
+
 func InstallArchBase(config SystemConfig) error {
  	// 1. Partition Discs
 	// TODO: Create output for users
@@ -82,8 +90,10 @@ func InstallArchBase(config SystemConfig) error {
 	mountPartitions(config.Disk + 1, config.Disk + 2, "/dev/mapper/cryptroot", "/mnt")
 
 	// 2. Install Base system packages (base, linux, linux-firmware, networkmanager, git, etc.)
+	installBaseSystem(rootMountPoint)
 
 	// 3. Generate fstab
+	generateFstab(rootMountPoint)
 
 	// 4. Base System configuration (Locale, Keyboard layout, clock, etc.)
 
